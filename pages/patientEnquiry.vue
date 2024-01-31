@@ -44,10 +44,10 @@
               <label for="gender">Gender</label>
             </div>
             <div class="radio-options">
-              <input type="radio" id="male" name="gender" value="Male" v-model="data.gender">
+              <input type="radio" id="male" name="gender" value="male" v-model="data.gender">
               <label for="male">Male</label>
 
-              <input type="radio" id="female" name="gender" value="Female" v-model="data.gender">
+              <input type="radio" id="female" name="gender" value="female" v-model="data.gender">
               <label for="female">Female</label>
             </div>
           </div>
@@ -91,10 +91,10 @@
               <label for="gender">Gender</label>
             </div>
             <div class="radio-options">
-              <input type="radio" id="male" name="gender_0" value="Male" v-model="data.gender_0">
+              <input type="radio" id="male" name="gender_0" value="male" v-model="data.gender_0">
               <label for="male">Male</label>
 
-              <input type="radio" id="female" name="gender_0" value="Female" v-model="data.gender_0">
+              <input type="radio" id="female" name="gender_0" value="female" v-model="data.gender_0">
               <label for="female">Female</label>
             </div>
           </div>
@@ -143,12 +143,10 @@
           <div class="doctor-selection">
             <label for="doctorSelection">Doctor Selection</label>
             <div class="radio-options">
-              <input type="radio" id="dutyDoctor" name="doctorSelection" value="Duty Doctor"
-                v-model="data.doctorSelection">
+              <input type="radio" id="dutyDoctor" name="doctorSelection" value="duty" v-model="data.doctorSelection">
               <label for="dutyDoctor">DutyDoctor</label>
 
-              <input type="radio" id="chiefDoctor" name="doctorSelection" value="Chief Doctor"
-                v-model="data.doctorSelection">
+              <input type="radio" id="chiefDoctor" name="doctorSelection" value="chief" v-model="data.doctorSelection">
               <label for="chiefDoctor">ChiefDoctor</label>
             </div>
           </div>
@@ -250,6 +248,8 @@ export default {
       user: {
         name: "",
         objectId: '',
+        domain: '',
+        subdomain: '',
         loggedInUser: {},
       },
       dateWarnings: {
@@ -280,6 +280,8 @@ export default {
       this.user.loggedInUser = {
         name: sourceData.username,
         objectId: sourceData._id.$oid,
+        domain: sourceData.domain,
+        subdomain: sourceData.subdomain,
       };
 
       console.log("Logged-in user data:", this.user.loggedInUser);
@@ -288,6 +290,19 @@ export default {
     }
   },
   methods: {
+    formatDate(date) {
+      if (!date) return '';
+      const parsedDate = new Date(date);
+      // Check if the date is valid
+      if (isNaN(parsedDate)) {
+        return '';
+      }
+      const day = parsedDate.getDate().toString().padStart(2, '0');
+      const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = parsedDate.getFullYear();
+      return `${day}-${month}-${year}`;
+    },
+
     increaseCount() {
       this.count++;
     },
@@ -310,6 +325,8 @@ export default {
       } else {
         this.dateWarnings[datatype] = '';
       }
+
+
     },
     updateFinance() {
       if (this.data.financeCheckbox) {
@@ -341,28 +358,35 @@ export default {
     getMinDate() {
       return new Date().toISOString().split('T')[0];
     },
+
     async searchIconClicked() {
       if (!/^\d+$/.test(this.data.phonenumber)) {
         this.searchError = 'Please enter the phonenumber for search.';
         return;
       }
-      // Show a success message to the user
-      //  this.showMessageToUser('Successfully Searched');
-      //  this.successMessage("Succesfully Searched");
-
       try {
         const objectId = this.user.loggedInUser.objectId;
         const phoneNumber = parseInt(this.data.phonenumber);
-        const response = await fetchDataByPhoneNumber(objectId, phoneNumber);
+        const domain = this.user.loggedInUser.domain;
+        const subdomain = this.user.loggedInUser.subdomain;
+        const response = await fetchDataByPhoneNumber(domain, subdomain, objectId, phoneNumber);
 
         if (response && response.source && response.source.length > 0) {
           // Existing data is found
           const dataFromSource = response.source[0];
           this.formData = typeof dataFromSource === 'string' ? JSON.parse(dataFromSource) : dataFromSource;
+          // this.formatDates();
+
+          const formatDateTo = (dateString) => {
+            const [day, month, year] = dateString.split('-');
+            return `${year}-${month}-${day}`;
+          };
 
           // Store the ObjectId and resourceId in sessionStorage
           sessionStorage.setItem('objectId', this.formData.userId?.$oid || '');
           sessionStorage.setItem('resourceId', this.formData._id?.$oid || '');
+          sessionStorage.setItem('userDomain', this.formData.domain || '');
+          sessionStorage.setItem('userSubDomain', this.formData.subdomain || '');
 
           // Update the form fields with the fetched data
           this.data = {
@@ -380,8 +404,8 @@ export default {
             distance: this.formData.distance || '',
             treatment: this.formData.treatment || '',
             remarksDoc: this.formData.remarksDoc || '',
-            expectedDate: this.formData.expectedDate || '',
-            followUpDate: this.formData.followUpDate || '',
+            expectedDate: formatDateTo(this.formData.expectedDate) || '',
+            followUpDate: formatDateTo(this.formData.followUpDate) || '',
             name_0: this.formData.name_0 || '',
             age_0: this.formData.age_0 || '',
             gender_0: this.formData.gender_0 || '',
@@ -390,6 +414,8 @@ export default {
             remarks_0: this.formData.remarks_0 || '',
           };
 
+          console.log('Expected Date:', this.formData.expectedDate);
+          console.log('Follow-Up Date:', this.formData.followUpDate);
           this.data.financeCheckbox = true;
           this.data.distanceCheckbox = true;
           this.data.treatmentCheckbox = true;
@@ -404,9 +430,13 @@ export default {
           this.showAdditionalInfo = this.hasValuesInAdditionalInfoFields();
         } else {
           // No data found, reset form fields
-          this.data = { ...initialFormData }; // assuming initialFormData is your initial form data
-          this.formData = {};
-
+          if (!this.data.phonenumber) {
+            // No data found, reset form fields
+            this.data = { ...data }; // Reset form fields to initial state
+          } else {
+            this.data = { ...data, phonenumber: this.data.phonenumber }; // Retain the entered phonenumber
+          }
+          this.formData = {}; // Reset formData
           // Update the button text and placeholder dynamically
           this.updateButtonAndPlaceholder();
 
@@ -414,16 +444,17 @@ export default {
           this.showAdditionalInfo = false;
 
           // Set the searchError with a custom message
-          this.searchError = `No data available for the provided phone number: ${phoneNumber}`;
+          this.searchError = `No data available for the provided phone number`;
+          setTimeout(() => {
+            this.searchError = "";
+          }, 2000);
         }
       } catch (error) {
         // Log the error for debugging purposes
         console.error('Error fetching data:', error);
         // Set the searchError with a custom message
         this.searchError = 'No Data Found ';
-        setTimeout(() => {
-          this.searchError = "";
-        }, 2000);
+
       }
     },
     updateButtonAndPlaceholder() {
@@ -457,8 +488,13 @@ export default {
     async submitForm() {
       try {
 
-        // this.successMessage = '';
+        if (this.data.expectedDate && !isNaN(Date.parse(this.data.expectedDate))) {
+          this.data.expectedDate = this.formatDate(this.data.expectedDate);
+        }
 
+        if (this.data.followUpDate && !isNaN(Date.parse(this.data.followUpDate))) {
+          this.data.followUpDate = this.formatDate(this.data.followUpDate);
+        }
         if (!this.data.phonenumber) {
           this.searchError = "Please Enter the Mobile Number";
           setTimeout(() => {
@@ -467,7 +503,16 @@ export default {
           return;
         }
         const objectId = this.user.loggedInUser.objectId;
-        // Set the current date before sending the form data
+        const domain = this.user.loggedInUser.domain;
+        const subdomain = this.user.loggedInUser.subdomain;
+
+        if (this.data.expectedDate && !isNaN(Date.parse(this.data.expectedDate))) {
+          this.data.expectedDate = this.formatDate(this.data.expectedDate);
+        }
+
+        if (this.data.followUpDate && !isNaN(Date.parse(this.data.followUpDate))) {
+          this.data.followUpDate = this.formatDate(this.data.followUpDate);
+        }
         this.data.createDated = {
           "$date": DateTime.utc().toFormat('yyyy-MM-dd'),
         };
@@ -475,14 +520,12 @@ export default {
         console.log('Data before sending:', this.data); // Log the data before sending
 
         // Save new data
-        const saveResponse = await saveFormData(this.data, objectId); // Replace with your actual save method
+        const saveResponse = await saveFormData(this.data, domain, subdomain, objectId); // Replace with your actual save method
         this.successMessage = 'Form Submitted Successfully..!';
-
-        console.log('Data saved:', saveResponse);
         setTimeout(() => {
-          this.successMessage = "";
+          this.successMessage = '';
         }, 2000);
-
+        console.log('Data saved:', saveResponse);
 
         // Reset formData to its initial state
         this.data = { ...data };
@@ -496,12 +539,27 @@ export default {
       try {
         // Retrieve ObjectId and resourceId from sessionStorage
         const objectId = sessionStorage.getItem('objectId');
+        console.log(objectId);
         const resourceId = sessionStorage.getItem('resourceId');
+        console.log(resourceId);
+        const userDomain = sessionStorage.getItem('userDomain');
+        console.log(userDomain);
+        const userSubDomain = sessionStorage.getItem('userSubDomain');
+        console.log(userSubDomain);
+        // const subdomain = sessionStorage.getItem('subdomain');
 
         // Check if the retrieved ObjectId and resourceId are valid
         if (!objectId || !resourceId) {
-          console.error('Cannot update without valid ObjectId or resourceId.');
+          console.error('Cannot update without valid ObjectId or resourceId.'); e
           return;
+        }
+
+        if (this.data.expectedDate && !isNaN(Date.parse(this.data.expectedDate))) {
+          this.data.expectedDate = this.formatDate(this.data.expectedDate);
+        }
+
+        if (this.data.followUpDate && !isNaN(Date.parse(this.data.followUpDate))) {
+          this.data.followUpDate = this.formatDate(this.data.followUpDate);
         }
 
         if (this.formData._id) {
@@ -513,7 +571,7 @@ export default {
           console.log('Data before updating:', this.data);
 
           // Update existing data only if there is an _id
-          const updateResponse = await updateFormData(this.data, objectId, resourceId);
+          const updateResponse = await updateFormData(this.data, userDomain, userSubDomain, objectId, resourceId);
 
           // Check if the update was successful before resetting the data
           if (updateResponse && updateResponse.success) {
@@ -522,11 +580,13 @@ export default {
             // Reset formData to its initial state
             this.data = { ...data };
             console.log('Data updated and reset:', this.data);
+            setTimeout(() => {
+              this.successMessage = "";
+            }, 2000);
+
 
             this.showAdditionalInfo = false;
-            //           setTimeout(() => {
-            //   this.searchError = "";
-            // }, 4000);
+
           } else {
             // Handle update failure, show an error message, etc.
             console.error('Error updating form:', updateResponse);

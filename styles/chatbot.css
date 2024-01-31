@@ -6,18 +6,18 @@
   font-family: 'Arial', sans-serif;
 }
 
-.top {
+.expected-date{
+  position: relative;
   display: flex;
-  justify-content: center;
+  margin-right: 850px;
   margin-top: 10px;
 }
-
-.expected-date label {
-  margin-right: 10px;
+.expected-date label{
+  margin-right: 20px;
+  font-size: large;
+  margin-top: 10px;
   font-weight: bold;
-  color: #333;
 }
-
 .search-input {
   display: flex;
   align-items: center;
@@ -26,7 +26,9 @@
 
 .search-icon {
   cursor: pointer;
-  margin-left: 10px;
+  margin-left: 20%;
+  position: absolute;
+  margin-bottom: 60px;
   font-size: 25px;
 }
 
@@ -34,13 +36,13 @@
   padding: 8px;
   border-radius: 8px;
   border: 3px solid #ccc;
-  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .table-container {
   display: flex;
   justify-content: center;
-  margin-top: 10px;
+  /* margin-top: 5px; */
 
 }
 
@@ -49,6 +51,7 @@
   width: 1200px;
   text-align: center;
   box-shadow: 0 0 10px #8bd600;
+  margin-top: 10px;
 }
 
 .table th,
@@ -61,12 +64,15 @@
   background-color: #8bd600;
   color: white;
 }
-
-.primary-table {
-  display: flex;
-  justify-content: center;
-  margin-right: 44%;
+.button-group{
+ position: absolute;
+ margin-top: 10px;
+ margin-left: 50px;
 }
+/* .primary-table {
+  display: flex;
+  margin-right: 44%;
+} */
 
 .primary-btn,
 .secondary-btn,
@@ -125,15 +131,6 @@
 .fourth-btn.selected {
   background-color: #2c5b1d;
   color: rgb(255, 255, 255);
-}
-
-footer {
-  background-color: none;
-  color: rgb(0, 0, 0);
-  text-align: center;
-  font-weight: bolder;
-  margin-top: 18%;
-  padding: 20px;
 }
 
 @media only screen and (max-width: 800px) {

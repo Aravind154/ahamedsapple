@@ -21,16 +21,28 @@
         <!-- for password -->
         <div class="form-group">
           <div class="password-field">
-            <input :type="showPassword ? 'text' : 'password'" placeholder="Password" v-model="password" required id="password" />
+            <input :type="showPassword ? 'text' : 'password'" placeholder="Password" v-model="password" required
+              id="password" />
             <span class="eye-toggle" @click="togglePasswordVisibility">
               <i :class="eyeIconClass">
-                  <link rel="stylesheet"
-                    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-                </i>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+              </i>
             </span>
             <span class="error-message" :class="{ 'error-visible': passwordError }">{{ passwordError }}</span>
           </div>
         </div>
+        <!-- Role -->
+        <div class="form-group">
+          <select id="role" v-model="role" required class="role-dropdown" >
+            <option disabled value="" selected hidden>Role</option>
+            <option v-for="option in roleOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+          <span class="error-message" :class="{ 'error-visible': roleError }">{{ roleError }}</span>
+        </div>
+
+
         <!-- for domain -->
         <div class="form-group">
           <input type="text" placeholder="Domain" v-model="domain" required />
@@ -55,15 +67,14 @@
           <span class="alert-message">{{ alertMessage || passwordError }}</span>
         </div>
         <!-- forgot password -->
-        
+
       </form>
     </div>
   </div>
 </template>
 
 <script>
-import { registerUser } from '@/api/api.js';
-
+import { roleOptions } from '@/properties/roleOptions.js';
 export default {
   data() {
     return {
@@ -71,6 +82,7 @@ export default {
       emailid: '',
       username: '',
       password: '',
+      role: '',
       domain: '',
       subdomain: '',
       showPassword: false,
@@ -78,13 +90,20 @@ export default {
       emailidError: '',
       usernameError: '',
       passwordError: '',
+      roleError: '',
       domainError: '',
       subdomainError: '',
       alertMessage: '',
       successMessage: '',
+      roleOptions: roleOptions,
     };
   },
   computed: {
+    roleClass() {
+      // Assuming you have a property named 'color' in each role object
+      const selectedRole = this.roleOptions.find(option => option.value === this.role);
+      return selectedRole ? selectedRole.color : '';
+    },
     eyeIconClass() {
       return this.showPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
     },
@@ -95,48 +114,66 @@ export default {
       this.clientnameError = '';
       this.usernameError = '';
       this.passwordError = '';
+      this.roleError = '',
       this.domainError = '';
       this.subdomainError = '';
       this.alertMessage = '';
+      try {
+        const response = await fetch('http://localhost:8080/mannit/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            emailid: this.emailid,
+            clientname: this.clientname,
+            username: this.username,
+            password: this.password,
+            role: this.role,
+            domain: this.domain,
+            subdomain: this.subdomain,
+          }),
+        });
 
-      const userData = {
-        emailid: this.emailid,
-        clientname: this.clientname,
-        username: this.username,
-        password: this.password,
-        domain: this.domain,
-        subdomain: this.subdomain,
-      };
+        if (response.ok) {
+          this.successMessage = 'Registered successfully!';
+          setTimeout(() => {
+            this.$router.push('/login');
+          }, 1000);
 
-      const { success, data, error } = await registerUser(userData);
-
-      if (success) {
-        this.successMessage = 'Registered successfully!';
-        setTimeout(() => {
-          this.$router.push('/login');
-        }, 2000);
-
-        console.log('Registration successful');
-        console.log('Client Name:', this.clientname);
-        console.log('emailid:', this.emailid);
-        console.log('Username:', this.username);
-        console.log('Password:', this.password);
-        console.log('domain:', this.domain);
-        console.log('subdomain:', this.subdomain);
-      } else {
-        // Handle errors based on the response from the service
-        this.clientnameError = data.clientname || '';
-        this.emailidError = data.emailid || '';
-        this.usernameError = data.username || '';
-        this.passwordError = data.password || '';
-        this.domainError = data.domain || '';
-        this.subdomainError = data.subdomain || '';
-
-        if (!data || !data.errorMsg) {
-          this.alertMessage = error || 'An error occurred. Please try again.';
+          console.log('Registration successful');
+          console.log('Client Name:', this.clientname);
+          console.log('emailid:', this.emailid);
+          console.log('Username:', this.username);
+          console.log('Password:', this.password);
+          console.log('Password:', this.role);
+          console.log('domain:', this.domain);
+          console.log('subdomain:', this.subdomain);
         } else {
-          this.alertMessage = data.errorMsg;
+          // Handle specific error cases based on response status or structure
+          const data = await response.json();
+
+          // Check for errors related to each field
+          this.clientnameError = data.clientname || '';
+          this.emailidError = data.emailid || '';
+          this.usernameError = data.username || '';
+          this.passwordError = data.password || '';
+          this.roleError = data.role || '';
+          this.domainError = data.domain || '';
+          this.subdomainError = data.subdomain || '';
+
+          // Check for a general error message
+          if (response.status !== 400) {
+            this.alertMessage = data.errorMsg || 'An error occurred. Please try again.';
+          } else {
+            // Reset the general alert message if there is no non-validation error
+            this.alertMessage = '';
+          }
         }
+      } catch (error) {
+        console.error('An error occurred while registering', error.message);
+        this.alertMessage = 'An error occurred. Please try again.';
+        // Handle network or other errors
       }
     },
     togglePasswordVisibility() {

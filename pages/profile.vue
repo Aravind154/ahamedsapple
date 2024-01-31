@@ -41,9 +41,7 @@
         </div>
       </div>
     </div>
-    <footer>
-      <p>&copy; 2024 MANNIT-INNOVATIONS</p>
-    </footer>
+    <Footer/>
   </div>
 </template>
 

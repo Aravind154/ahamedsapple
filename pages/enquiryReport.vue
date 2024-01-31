@@ -1,14 +1,24 @@
 <template>
   <div class="full">
     <Header class="Header" />
-    <div class="top">
-      <div class="expected-date">
-        <label for="chooseDate">Choose the Date</label>
-        <input type="date" id="chooseDate" v-model="searchDate" @input="updateDate" class="custom-input" />
+         <div class="search-input">
+        <div class="filter-search">
+          <label for="filterBy">Filter by:</label>
+          <select id="filterBy" v-model="filterKey" class="filter">
+            <option value="">Select</option>
+            <option v-for="column in tableColumns" :key="column.key" :value="column.key">{{ column.label }}</option>
+          </select>
+          <input type="text" class="custom-input" v-model="filterText" placeholder="Enter filter text" />
+        </div>
+      
       </div>
-      <div class="search-input">
+      <div class="top">
+      <!-- <div class="expected-date"> -->
+        <label for ="date" class="label-date"> Enquiry Date :
+        <input type="date" id="chooseDate" v-model="searchDate" @input="updateDate" class="date" />
         <span class="search-icon" @click="searchReport">&#128269;</span>
-      </div>
+      </label>
+      <!-- </div> -->
     </div>
     <div class="table-container" id="no-more-tables">
       <table class="table">
@@ -70,7 +80,7 @@
 
 <script>
 import Header from '~/components/Header.vue';
-import { fetchDataForDate } from '~/api/api.js';
+import { fetchDataWithFilter, fetchDataWithoutFilter } from '~/api/api.js';
 
 export default {
   components: {
@@ -78,33 +88,37 @@ export default {
   },
   data() {
     return {
-      searchDate: '', // Set to today's date by default
-      defaultDate: '', // Added property to store today's date
       user: {
         name: "",
         objectId: '',
+        domain: '',
+        subdomain: '',
         loggedInUser: {},
       },
       source: [],
       pagination: {
         page: 1,
-        itemsPerPage: 8,
+        itemsPerPage: 10,
       },
-      // tableColumns: [
-      //    'Name', 'PhoneNumber', 'Gender', 'Location', 'Doctor', 'Remarks', 'Doctor Selection', 'Follow-up Date'
-      // ],
+      filterKey: '',
+      filterText: '',
+      tableColumns: [
+        { key: 'name', label: 'Name' },
+        { key: 'phonenumber', label: 'PhoneNumber' },
+        { key: 'gender', label: 'Gender' },
+        { key: 'location', label: 'Location' },
+        { key: 'doctorSelection', label: 'Doctor Selection' },
+        { key: 'finance', label: 'Finance' },
+        { key: 'distance', label: 'Distance' },
+        { key: 'treatment', label: 'Treatment' },
+        { key: 'expectedDate', label: 'Expected Date' },
+        { key: 'followUpDate', label: 'Follow-up Date' }
+      ],
     };
   },
   mounted() {
-    this.setDefaultDate();
+    this.searchReport();
     this.initUserData();
-    this.fetchDataForDate(this.defaultDate)
-      .then(() => {
-        this.searchDate = this.defaultDate;
-      })
-      .catch((error) => {
-        console.error('Error fetching data:', error);
-      });
   },
   computed: {
     paginatedItems() {
@@ -118,22 +132,53 @@ export default {
   },
   methods: {
     async searchReport() {
-      this.fetchDataForDate(this.searchDate);
+      try {
+        if (this.filterKey && this.filterText) {
+          await this.fetchDataWithFilter(this.filterKey, this.filterText);
+        } else {
+          // If filter is not selected, make another API call without the filter
+          await this.fetchDataWithoutFilter();
+        }
+      } catch (error) {
+        console.error('Error searching data:', error);
+      }
     },
 
-    async fetchDataForDate(date) {
+    async fetchDataWithoutFilter() {
       try {
         this.validateObjectID();
-        this.validateDate(date);
 
-        const formattedDate = this.formatDate(date);
         const objectId = this.user.loggedInUser.objectId;
+        const domain = this.user.loggedInUser.domain;
+        const subdomain = this.user.loggedInUser.subdomain;
+        const formattedDate = this.formatDate(this.searchDate);
 
-        this.source = await fetchDataForDate(objectId, formattedDate);
+        // Make API call without the filter using the function from apiService.js
+        const dataWithoutFilter = await fetchDataWithoutFilter(objectId, domain, subdomain, formattedDate);
+
+        // Assuming the API response structure is similar to the one with filter
+        this.source = dataWithoutFilter;
         this.pagination.page = 1;
       } catch (error) {
-        console.error('Error fetching data:', error);
-        throw error; // Re-throw the error for better error handling
+        console.error('Error fetching data without filter:', error);
+        throw error;
+      }
+    },
+    async fetchDataWithFilter(filterKey, filterValue) {
+      try {
+        this.validateObjectID();
+
+        const objectId = this.user.loggedInUser.objectId;
+        const domain = this.user.loggedInUser.domain;
+        const subdomain = this.user.loggedInUser.subdomain;
+
+        const response = await fetchDataWithFilter(domain, subdomain, objectId, filterKey, filterValue, this.formatDate(this.searchDate));
+
+        this.source = response.source.map(item => JSON.parse(item));
+        this.pagination.page = 1;
+      } catch (error) {
+        console.error('Error fetching data with filter:', error);
+        throw error;
       }
     },
 
@@ -147,16 +192,6 @@ export default {
       this.searchDate = event.target.value;
     },
 
-    setDefaultDate() {
-      const today = new Date();
-      const day = today.getDate().toString().padStart(2, '0');
-      const month = (today.getMonth() + 1).toString().padStart(2, '0');
-      const year = today.getFullYear();
-      this.defaultDate = `${year}-${month}-${day}`;
-      this.searchDate = this.defaultDate;
-      console.log("Default Date:", this.defaultDate);
-    },
-
     initUserData() {
       const storedUser = sessionStorage.getItem("loggedInUser");
       if (storedUser) {
@@ -164,6 +199,8 @@ export default {
         this.user.loggedInUser = {
           name: sourceData.username,
           objectId: sourceData._id.$oid,
+          domain: sourceData.domain,
+          subdomain: sourceData.subdomain,
         };
         console.log("Logged-in user data:", this.user.loggedInUser);
       } else {
@@ -177,21 +214,6 @@ export default {
         throw new Error('Object ID not found in the session');
       }
     },
-
-    validateDate(date) {
-      if (!date) {
-        console.warn('Date is empty');
-        throw new Error('Date is empty');
-      }
-
-      const parsedDate = new Date(date);
-
-      if (isNaN(parsedDate.getTime())) {
-        console.warn('Invalid date format');
-        throw new Error('Invalid date format');
-      }
-    },
-
     formatDate(date) {
       const parsedDate = new Date(date);
       const day = parsedDate.getDate().toString().padStart(2, '0');
@@ -202,7 +224,6 @@ export default {
   },
 };
 </script>
-
 
 <style scoped>
 @import '@/styles/report.css';

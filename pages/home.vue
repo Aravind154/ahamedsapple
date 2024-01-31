@@ -57,7 +57,7 @@
           cy="12.5" 
           r="12.5" 
           fill="#8DB600" 
-          @click="goToRoute('/patientTracking')"/>
+          @click="goToRoute()"/>
             <path
               d="M11.9231 5C11.2308 5 10.7692 5.43077 10.7692 6.07692V10.3846H6.15385C5.46154 10.3846 5 10.8154 5 11.4615V12.5385C5 13.1846 5.46154 13.6154 6.15385 13.6154H10.7692V17.9231C10.7692 18.5692 11.2308 19 11.9231 19H13.0769C13.7692 19 14.2308 18.5692 14.2308 17.9231V13.6154H18.8462C19.5385 13.6154 20 13.1846 20 12.5385V11.4615C20 10.8154 19.5385 10.3846 18.8462 10.3846H14.2308V6.07692C14.2308 5.43077 13.7692 5 13.0769 5H11.9231Z"
               fill="white" />
@@ -66,7 +66,7 @@
           <div class="content">
           <p style="font-weight: bold;">Patient Tracking</p>
           <p>Click here to check out the profit, loss analysis chart for your clinic.</p>
-          <button class="enquiry-button" @click='goToRoute("/enquiryReport")'>
+          <button class="enquiry-button" @click='goToRoute("")'>
             REPORT<span class="exclamation-mark">!</span>
           </button> 
         </div>
@@ -78,7 +78,7 @@
           height="50" 
           viewBox="0 0 90 91" 
           xmlns="http://www.w3.org/2000/svg" 
-          @click="goToRoute('/doctorDashboard')">
+          @click="goToRoute()">
             <ellipse cx="45" cy="45.5" rx="45" ry="45.5" fill="#8DB600" />
             <path
               d="M49.7491 21.1681C49.1462 21.3921 48.6047 21.7974 48.288 22.2667C47.7771 23.0026 47.7771 22.9706 47.7771 32.2713C47.7771 37.871 47.818 41.1134 47.8793 41.3694C48.0734 42.0947 48.6047 42.756 49.3097 43.14L49.9534 43.4813L59.006 43.4599L68.0587 43.4279L68.4674 43.1933C68.9782 42.9053 69.4482 42.3933 69.7547 41.7747L70 41.2948V32.282V23.2693L69.7547 22.7466C69.4482 22.096 68.9169 21.5414 68.3243 21.2534C67.8543 21.0294 67.7828 21.0294 59.0673 21.0081C50.8321 20.9867 50.2497 20.9974 49.7491 21.1681Z"
@@ -96,7 +96,7 @@
           <div class="content">
           <p style="font-weight: bold;">Doctor Dashboard</p>
           <p>Click here to check out the doctors and their patients.</p>
-          <button class="enquiry-button" @click='goToRoute("/enquiryReport")'>
+          <button class="enquiry-button" @click='goToRoute("")'>
             REPORT<span class="exclamation-mark">!</span>
           </button> 
         </div>
@@ -108,7 +108,7 @@
           height="50" 
           viewBox="0 0 25 25" 
           fill="none" xmlns="http://www.w3.org/2000/svg"
-          @click="goToRoute('/profileAnalysis')">
+          @click="goToRoute()">
             <circle cx="12.5" cy="12.5" r="12.5" fill="#8DB600" />
             <path
               d="M15.2139 6.03613C15.2139 5.46389 15.8567 5 16.6497 5H18.5641C19.3572 5 20 5.46389 20 6.03613V16.3974C20 16.9697 19.3572 17.4336 18.5641 17.4336H16.6497C15.8567 17.4336 15.2139 16.9697 15.2139 16.3974V6.03613Z"
@@ -123,7 +123,7 @@
           <div class="content">
           <p style="font-weight: bold;">Profile Analysis</p>
           <p>Click here to check your patient's health and rating.</p>
-          <button class="enquiry-button" @click='goToRoute("/enquiryReport")'>
+          <button class="enquiry-button" @click='goToRoute()'>
             REPORT<span class="exclamation-mark">!</span>
           </button>
         </div>
@@ -139,8 +139,12 @@ export default {
   data() {
     return {
       user:{
+        clientname:'',
         name:"",
-        objectId:'',  
+        objectId:'',
+        role:'',
+        domain:'',
+        subdomain:'',
         loggedInUser:{},   
     }
     }
@@ -160,8 +164,12 @@ export default {
     
     // Access the 'username' property and set it in the component data
     this.user.loggedInUser = {
+      clientname:sourceData.clientname,
       name: sourceData.username,
+      role:sourceData.role,
       objectId:sourceData._id.$oid,
+      domain:sourceData.domain,
+      subdomain:sourceData.subdomain,
     };
 
     console.log("Logged-in user data:", this.user.loggedInUser);

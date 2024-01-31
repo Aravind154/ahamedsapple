@@ -1,17 +1,7 @@
+
 <template>
   <div class="full">
     <Header class="Header" />
-
-    <!-- Date selection and search -->
-    <div class="top">
-      <div class="expected-date">
-        <label for="chooseDate">Choose the Date</label>
-        <input type="date" id="chooseDate" v-model="searchDate" @input="updateDate" class="custom-input" />
-      </div>
-      <div class="search-input">
-        <span class="search-icon" @click="searchReport">&#128269;</span>
-      </div>
-    </div>
 
     <!-- Table selection buttons -->
     <div class="primary-table">
@@ -24,6 +14,17 @@
           @click="toggleTable('rejectedPatient')">Rejected Patient</button>
         <button type="button" class="fourth-btn" :class="{ 'selected': selectedTable === 'sentnumbers' }"
           @click="toggleTable('sentnumbers')">Sent Message</button>
+      </div>
+    </div>
+
+      <!-- Date selection and search -->
+      <div class="top">
+      <div class="expected-date">
+        <label for="chooseDate">Choose the Date</label>
+        <input type="date" id="chooseDate" v-model="searchDate" @input="updateDate" class="custom-input" />
+      </div>
+      <div class="search-input">
+        <span class="search-icon" @click="searchReport">&#128269;</span>
       </div>
     </div>
 
@@ -133,9 +134,7 @@
         </li>
       </ul>
     </nav>
-    <footer>
-      <p>&copy; 2024 MANNIT-INNOVATIONS</p>
-    </footer>
+    <Footer/>
   </div>
 </template>
 
@@ -153,7 +152,7 @@ export default {
     const dataToDisplay = ref([]);
     const pagination = ref({
       page: 1,
-      itemsPerPage: 8,
+      itemsPerPage: 10,
     });
     const originalReportData = ref([]);
     const selectedTable = ref('patientBooking'); // Set a default table name
